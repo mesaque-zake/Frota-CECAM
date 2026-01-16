@@ -2,15 +2,18 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Frota CECAM</title>
     
     <link rel="manifest" href="manifest.json">
+    
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <meta name="theme-color" content="#0066cc" id="theme-color-meta">
+    <meta name="theme-color" content="#0066cc">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     
     <meta property="og:title" content="Gerenciador Frota CECAM">
     <meta property="og:description" content="Sistema de gestão de abastecimento e checklist de veículos.">
@@ -20,7 +23,14 @@
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; }
+        
+        /* Fundo do corpo azul para evitar faixas brancas ao girar a tela */
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: #0066cc; 
+        }
 
         /* --- TELA DE CARREGAMENTO --- */
         #loading-screen {
@@ -32,36 +42,34 @@
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            /* Efeito de saída suave */
             transition: opacity 0.8s ease, backdrop-filter 0.8s ease;
         }
 
-        /* Classe para esconder o loading */
         .fade-out {
             opacity: 0;
-            pointer-events: none; /* Permite clicar no app atrás */
-            backdrop-filter: blur(0px); /* Remove o embaçado */
+            pointer-events: none;
+            backdrop-filter: blur(0px);
         }
 
-        /* LOGO PRINCIPAL */
+        /* LOGO */
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 5px; /* Espaço entre letras */
+            gap: 5px;
             margin-bottom: 20px;
         }
 
         .logo-text {
             font-family: 'Poppins', sans-serif;
             font-weight: 700;
-            font-size: 3rem; /* Tamanho grande */
+            font-size: 3rem;
             color: white;
             letter-spacing: 0.2rem;
         }
 
-        /* Pneu Girando */
+        /* ANIMAÇÃO DO PNEU */
         .pneu-icon {
-            width: 50px; /* Ajuste conforme necessário */
+            width: 50px;
             height: auto;
             animation: spin 1.5s linear infinite;
         }
@@ -71,14 +79,13 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Ícone Chave abaixo do logo */
         .chave-icon {
             width: 120px;
             height: auto;
             margin-top: -10px;
         }
 
-        /* RODAPÉ MESAQUE */
+        /* RODAPÉ */
         .footer {
             position: absolute;
             bottom: 30px;
@@ -90,29 +97,31 @@
         }
         
         .mesa-logo {
-            height: 30px; /* Ajuste o tamanho da logo Mesaque */
+            height: 30px;
             display: block;
             margin: 0 auto 10px auto;
         }
 
-        .powered-by {
-            font-weight: 300;
-        }
+        .powered-by { font-weight: 300; }
 
-        /* --- IFRAME (O APP) --- */
+        /* --- IFRAME --- */
         iframe {
             width: 100vw;
-            height: 100vh;
+            height: 100vh; /* Ocupa 100% da altura */
             border: none;
             display: block;
+            background-color: #ffffff; /* Fundo padrão enquanto carrega */
         }
+
+        /* Para evitar que o iFrame fique branco no Dark Mode antes de carregar, 
+           podemos deixar transparente inicialmente, mas branco é mais seguro para o GAS */
 
         /* --- AVISO OFFLINE --- */
         #offline-warning {
-            display: none; /* Escondido por padrão */
+            display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 102, 204, 0.95);
+            background-color: #0066cc;
             z-index: 10000;
             color: white;
             flex-direction: column;
@@ -121,7 +130,6 @@
             text-align: center;
             font-family: 'Poppins', sans-serif;
         }
-        #offline-warning h2 { margin-bottom: 15px; }
         .btn-reload {
             margin-top: 20px;
             padding: 10px 20px;
@@ -132,7 +140,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-
     </style>
 </head>
 <body>
@@ -143,7 +150,6 @@
             <img src="icon-pneu.png" alt="O" class="pneu-icon">
             <span class="logo-text">TA</span>
         </div>
-        
         <img src="icon-chave.png" alt="Ferramenta" class="chave-icon">
 
         <div class="footer">
@@ -157,73 +163,43 @@
     <div id="offline-warning">
         <img src="icon-pneu.png" style="width: 60px; margin-bottom: 20px; opacity: 0.7;">
         <h2>Sem Conexão</h2>
-        <p>Verifique sua internet para acessar a frota.</p>
+        <p>Verifique sua internet.</p>
         <button class="btn-reload" onclick="window.location.reload()">Tentar Novamente</button>
     </div>
 
     <iframe id="gas-frame" src="https://script.google.com/macros/s/AKfycbyQDLIQZp4JrIT8_irSKEY63pwUMphISoJ4nuP7bBbN9NlcOaHxpAs1IRH3gNqkClmv/exec"></iframe>
 
     <script>
-        // --- 1. REGISTRO DO SERVICE WORKER (PWA) ---
+        // PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW registrado!', reg))
-                    .catch(err => console.log('Erro no SW:', err));
+                navigator.serviceWorker.register('./sw.js');
             });
         }
 
-        // --- 2. CONTROLE DA TELA DE LOADING ---
+        // LOADING
         const loadingScreen = document.getElementById('loading-screen');
-        const themeMeta = document.getElementById('theme-color-meta');
-
+        
         function hideLoading() {
-            // Adiciona a classe que faz o fade out
             loadingScreen.classList.add('fade-out');
-            
-            // CAMALEÃO: Muda a cor da barra de status para Branco (para combinar com o GAS)
-            // Aguarda meio segundo para mudar suavemente junto com o fade
-            setTimeout(() => {
-                themeMeta.setAttribute('content', '#ffffff');
-            }, 200);
-
-            // Remove da memória após a transição (opcional, mas bom pra limpeza)
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 1000); 
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 1000); 
         }
 
-        // Garante que o loading suma em no máximo 3 segundos, mesmo se o GAS demorar
+        // Tempo de segurança
         setTimeout(hideLoading, 3000);
 
-        // Opcional: Se o iFrame carregar antes de 3s, remove o loading (dá sensação de velocidade)
-        const iframe = document.getElementById('gas-frame');
-        iframe.onload = function() {
-            // Se já não tiver passado 3 segundos, fecha agora.
-            // (Pode ajustar para garantir pelo menos 1.5s de exibição da marca se quiser)
-           // hideLoading(); 
-        };
-
-
-        // --- 3. DETECÇÃO OFFLINE/ONLINE ---
-        const offlineScreen = document.getElementById('offline-warning');
-
+        // OFFLINE
         function updateOnlineStatus() {
+            const offlineScreen = document.getElementById('offline-warning');
             if (navigator.onLine) {
                 offlineScreen.style.display = 'none';
-                // Se voltou a internet, recarrega o iframe para garantir dados atualizados
-                // iframe.src = iframe.src; 
             } else {
                 offlineScreen.style.display = 'flex';
             }
         }
-
         window.addEventListener('online',  updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
-        
-        // Checa ao iniciar
         if(!navigator.onLine) updateOnlineStatus();
-
     </script>
 </body>
 </html>
